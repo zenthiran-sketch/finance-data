@@ -15,17 +15,29 @@ Multi-provider financial data platform — React + Node monorepo.
 
 ## Quick start
 
+From a fresh clone, one command is enough:
+
 ```bash
 cd signal-terminal
-npm install
-cp .env.example .env
-npm run db:migrate
-npm run db:seed
-npm run dev
+npm start
 ```
+
+That will install dependencies (if needed), create `.env` from `.env.example`, build the shared package, and start the API + dashboard.
 
 - Dashboard: http://localhost:5173
 - API: http://localhost:3001/api
+
+Manual steps (optional):
+
+```bash
+npm install
+cp .env.example .env   # Windows: copy .env.example .env
+npm run dev
+```
+
+The server runs database migrations and seeds instruments on startup automatically.
+
+**Node.js:** v22.5+ or v24 (built-in `node:sqlite` — no native database modules to compile).
 
 ## Project structure
 
@@ -44,6 +56,8 @@ Open **API Keys** in the UI (`/settings/api-keys`). Keys are encrypted at rest. 
 
 | Command | Description |
 |---------|-------------|
+| `npm start` | First-run setup + start server + client |
+| `npm run setup` | Create `.env`, `data/`, build shared |
 | `npm run dev` | Start server + client |
 | `npm run build` | Build all packages |
 | `npm run db:migrate` | Run SQLite migrations |

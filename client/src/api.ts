@@ -108,6 +108,22 @@ export async function fetchNews(symbol: string, limit = 20) {
   return res.json();
 }
 
+export interface SymbolNewsScrapeResult {
+  symbol: string;
+  finnhub: number;
+  stockdata: number;
+  newsSentiment: number;
+  social: number;
+  total: number;
+  message?: string;
+}
+
+export async function scrapeSymbolNews(symbol: string): Promise<SymbolNewsScrapeResult> {
+  const res = await fetch(`${BASE}/news/${encodeURIComponent(symbol)}/scrape`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to scrape news');
+  return res.json();
+}
+
 export async function fetchSentiment(symbol: string) {
   const res = await fetch(`${BASE}/sentiment/${encodeURIComponent(symbol)}`);
   if (!res.ok) throw new Error('Failed to load sentiment');

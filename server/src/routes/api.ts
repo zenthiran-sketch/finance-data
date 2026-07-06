@@ -287,6 +287,14 @@ apiRouter.get('/news/:symbol', async (req, res) => {
   res.json(events);
 });
 
+apiRouter.post('/news/:symbol/scrape', async (req, res) => {
+  const symbol = req.params.symbol.replace(/\.(NS|US)$/i, '');
+  if (!symbol) return res.status(400).json({ error: 'symbol required' });
+  const { scrapeSymbolNews } = await import('../collectors/news/symbolNews.js');
+  const result = await scrapeSymbolNews(symbol);
+  res.json(result);
+});
+
 apiRouter.get('/sentiment/:symbol', async (req, res) => {
   const symbol = req.params.symbol.replace(/\.(NS|US)$/i, '');
   const metrics = await timeSeriesReader.getLatestMetrics(symbol);

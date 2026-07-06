@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchNews, fetchSentiment } from '../api';
+import { fetchNews, fetchSentiment, scrapeSymbolNews } from '../api';
 
 interface NewsEvent {
   id: string;
@@ -83,6 +83,8 @@ export default function NewsSentimentPanel({ symbol }: { symbol: string }) {
   const [sentiment, setSentiment] = useState<SentimentData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'news' | 'social'>('all');
 
   const load = useCallback(async (silent = false) => {
@@ -103,6 +105,30 @@ export default function NewsSentimentPanel({ symbol }: { symbol: string }) {
   }, [symbol]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setScrapeMessage(null); }, [symbol]);
+
+  const handleScrape = useCallback(async () => {
+    if (!symbol) return;
+    setScraping(true);
+    setScrapeMessage(null);
+    try {
+      const result = await scrapeSymbolNews(symbol);
+      if (result.message) {
+        setScrapeMessage(result.message);
+      } else if (result.total > 0) {
+        const newsCount = result.finnhub + result.stockdata + result.newsSentiment;
+        const parts: string[] = [];
+        if (newsCount > 0) parts.push(`${newsCount} news`);
+        if (result.social > 0) parts.push(`${result.social} social`);
+        setScrapeMessage(`Fetched ${parts.join(' and ')} — sentiment updated.`);
+      }
+      await load(true);
+    } catch {
+      setScrapeMessage('Failed to fetch news. Check API keys in Settings.');
+    } finally {
+      setScraping(false);
+    }
+  }, [symbol, load]);
 
   const score = sentiment?.composite ?? sentiment?.metrics.find((m) => m.key === 'sentiment_score')?.value;
   const trendText = trendLabel(sentiment?.sentimentTrend ?? null);
@@ -120,19 +146,34 @@ export default function NewsSentimentPanel({ symbol }: { symbol: string }) {
             News for {symbol}
           </h2>
           <p className="chart-panel-desc">
-            Headlines mentioning this symbol from market feeds and keyed sources
+            Headlines and social sentiment for this symbol from keyed sources and Reddit
           </p>
         </div>
-        <button
-          type="button"
-          className="chart-refresh-btn"
-          onClick={() => load(true)}
-          disabled={loading || refreshing}
-          aria-label="Refresh news"
-        >
-          {refreshing ? '…' : '↻'}
-        </button>
+        <div className="chart-panel-actions">
+          <button
+            type="button"
+            className="chart-scrape-btn"
+            onClick={handleScrape}
+            disabled={loading || refreshing || scraping}
+            aria-busy={scraping}
+          >
+            {scraping ? 'Fetching…' : 'Fetch news & social'}
+          </button>
+          <button
+            type="button"
+            className="chart-refresh-btn"
+            onClick={() => load(true)}
+            disabled={loading || refreshing || scraping}
+            aria-label="Refresh news"
+          >
+            {refreshing ? '…' : '↻'}
+          </button>
+        </div>
       </div>
+
+      {scrapeMessage && (
+        <p className="chart-scrape-message" role="status">{scrapeMessage}</p>
+      )}
 
       {loading ? (
         <NewsSkeleton />
@@ -177,7 +218,7 @@ export default function NewsSentimentPanel({ symbol }: { symbol: string }) {
               <span className="news-empty-icon" aria-hidden>📰</span>
               <p>No headlines for {symbol} yet</p>
               <span className="news-empty-hint">
-                Market-wide collectors run every 15 minutes. Symbol-keyed news appears when available.
+                Market-wide collectors run every 15 minutes, or click Fetch news & social to pull headlines and Reddit sentiment now.
               </span>
             </div>
           ) : (

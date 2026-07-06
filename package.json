@@ -1,12 +1,18 @@
 {
   "name": "signal-terminal",
   "private": true,
+  "engines": {
+    "node": ">=22.5"
+  },
   "workspaces": [
     "shared",
     "server",
     "client"
   ],
   "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "node scripts/start.mjs",
+    "postinstall": "node scripts/setup.mjs",
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
     "db:migrate": "npm run db:migrate -w server",
